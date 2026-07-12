@@ -33,7 +33,7 @@ end
 
 local function loadConfig()
     -- Create directory if it doesn't exist
-    if not isRequiredDirectoryExist(config_dir) then
+    if not doesDirectoryExist(config_dir) then
         createDirectory(config_dir)
     end
     
