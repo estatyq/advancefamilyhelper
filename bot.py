@@ -18,6 +18,7 @@ FAMILY_NAME = os.getenv('FAMILY_NAME', 'Семья')
 ADMIN_IDS_RAW = os.getenv('ADMIN_IDS', '')
 ADMIN_IDS = [x.strip() for x in ADMIN_IDS_RAW.split(',') if x.strip()]
 POINT_RATE = int(os.getenv('POINT_RATE', 10000))
+print(f"[DEBUG] POINT_RATE loaded on startup: {POINT_RATE}")
 SECRET_TOKEN = os.getenv('SECRET_TOKEN', 'ChangeMeSuperSecretToken123!')
 TEST_MODE = os.getenv('TEST_MODE') == 'true'
 
@@ -518,9 +519,23 @@ def cmd_pay(message):
     
     conn = get_db()
     cursor = conn.cursor()
+    
+    # 1. Exact match
     cursor.execute("SELECT * FROM members WHERE LOWER(name) = LOWER(?)", (player_name,))
     row = cursor.fetchone()
     
+    # 2. Partial match
+    if not row:
+        cursor.execute("SELECT * FROM members WHERE name LIKE ?", (f"%{player_name}%",))
+        rows = cursor.fetchall()
+        if len(rows) == 1:
+            row = rows[0]
+        elif len(rows) > 1:
+            names_list = ", ".join([f"`{r['name']}`" for r in rows])
+            bot.reply_to(message, f"🔍 Найдено несколько похожих игроков: {names_list}.\nУточните имя в команде.", parse_mode='Markdown')
+            conn.close()
+            return
+            
     if not row:
         bot.reply_to(message, f"❌ Игрок `{player_name}` не найден в базе данных.", parse_mode='Markdown')
         conn.close()
@@ -540,16 +555,26 @@ def cmd_pay(message):
     
     if len(parts) >= 3:
         amount_str = parts[2].lower()
-        if amount_str.endswith('p') or amount_str.endswith('оч'):
+        
+        # Check if points suffix exists or if it's a plain number under 1000
+        is_points = amount_str.endswith('p') or amount_str.endswith('оч')
+        clean_str = amount_str.replace('p', '').replace('оч', '')
+        
+        if not is_points and clean_str.isdigit():
+            val = int(clean_str)
+            if val < 1000:
+                is_points = True
+                
+        if is_points:
             try:
-                val = int(amount_str.replace('p', '').replace('оч', ''))
+                val = int(clean_str)
                 if val <= 0:
                     raise ValueError
                 pay_points = min(val, unpaid_points)
                 pay_money = pay_points * POINT_RATE
                 comment = f"Частичная выплата {pay_points} оч."
             except ValueError:
-                bot.reply_to(message, "❌ Неверный формат очков. Пример: `10p`")
+                bot.reply_to(message, "❌ Неверный формат очков. Пример: `10` или `10p`")
                 conn.close()
                 return
         else:
@@ -716,9 +741,23 @@ def cmd_audit(message):
     
     conn = get_db()
     cursor = conn.cursor()
+    
+    # 1. Exact match
     cursor.execute("SELECT * FROM members WHERE LOWER(name) = LOWER(?)", (player_name,))
     member = cursor.fetchone()
     
+    # 2. Partial match
+    if not member:
+        cursor.execute("SELECT * FROM members WHERE name LIKE ?", (f"%{player_name}%",))
+        rows = cursor.fetchall()
+        if len(rows) == 1:
+            member = rows[0]
+        elif len(rows) > 1:
+            names_list = ", ".join([f"`{r['name']}`" for r in rows])
+            bot.reply_to(message, f"🔍 Найдено несколько похожих игроков: {names_list}.\nУточните имя в команде.", parse_mode='Markdown')
+            conn.close()
+            return
+            
     if not member:
         bot.reply_to(message, f"❌ Игрок `{player_name}` не найден в базе данных.", parse_mode='Markdown')
         conn.close()

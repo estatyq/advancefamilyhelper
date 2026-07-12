@@ -1,14 +1,15 @@
+[DEBUG] POINT_RATE loaded on startup: 10000
 Starting Telegram Bot listener...
-Starting Flask API Server on 0.0.0.0:5000...
+Starting Flask API Server on 0.0.0.0:5005...
  * Serving Flask app 'bot'
  * Debug mode: off
 WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
  * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.0.86:5000
+ * Running on http://127.0.0.1:5005
+ * Running on http://192.168.0.86:5005
 Press CTRL+C to quit
-2026-07-12 08:56:06,252 (__init__.py:1115 Thread-1 (run_telebot)) ERROR - TeleBot: "Infinity polling exception: A request to the Telegram API was unsuccessful. Error code: 401. Description: Unauthorized"
-2026-07-12 08:56:06,257 (__init__.py:1117 Thread-1 (run_telebot)) ERROR - TeleBot: "Exception traceback:
+2026-07-12 09:21:12,794 (__init__.py:1115 Thread-1 (run_telebot)) ERROR - TeleBot: "Infinity polling exception: A request to the Telegram API was unsuccessful. Error code: 401. Description: Unauthorized"
+2026-07-12 09:21:12,802 (__init__.py:1117 Thread-1 (run_telebot)) ERROR - TeleBot: "Exception traceback:
 Traceback (most recent call last):
   File "C:\Users\maxhy\AppData\Roaming\Python\Python314\site-packages\telebot\__init__.py", line 1110, in infinity_polling
     self.polling(non_stop=True, timeout=timeout, long_polling_timeout=long_polling_timeout,
@@ -34,3 +35,7 @@ Traceback (most recent call last):
     raise ApiTelegramException(method_name, result, result_json)
 telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 401. Description: Unauthorized
 "
+127.0.0.1 - - [12/Jul/2026 09:21:13] "POST /api/scan HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jul/2026 09:21:13] "POST /api/scan HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jul/2026 09:21:13] "POST /api/game-pay HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jul/2026 09:21:13] "POST /api/scan HTTP/1.1" 401 -
