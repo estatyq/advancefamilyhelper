@@ -63,7 +63,7 @@ local function getMyName()
     local _, id = sampGetPlayerIdByCharHandle(PLAYER_PED)
     if id then
         local name = sampGetPlayerNickname(id)
-        if name and name ~= "" then return u8:decode(name) end -- Convert to UTF-8
+        if name and name ~= "" then return u8(name) end -- Convert CP1251 to UTF-8
     end
     return "Unknown"
 end
@@ -71,8 +71,8 @@ end
 local function parseDialogText(text)
     local members = {}
     for line in text:gmatch("[^\r\n]+") do
-        -- Skip column headers if any (patterns converted to CP1251)
-        if not line:find(u8"Участник") and not line:find(u8"Ранг") and not line:find(u8"Заработано очков") then
+        -- Skip column headers if any (patterns converted from UTF-8 to CP1251)
+        if not line:find(u8:decode("Участник")) and not line:find(u8:decode("Ранг")) and not line:find(u8:decode("Заработано очков")) then
             -- Columns are tab-separated (\t) in DIALOG_STYLE_TABLIST_HEADERS
             local cols = {}
             for col in line:gmatch("[^\t]+") do
@@ -84,8 +84,8 @@ local function parseDialogText(text)
                 local rank = cols[2]
                 local raw_points = cols[3]
                 
-                -- Clean nickname from online/offline tags (patterns converted to CP1251)
-                local name = raw_name:gsub(u8"%s*%(онлайн%)", ""):gsub(u8"%s*%(оффлайн%)", "")
+                -- Clean nickname from online/offline tags (patterns converted from UTF-8 to CP1251)
+                local name = raw_name:gsub(u8:decode("%s*%(онлайн%)"), ""):gsub(u8:decode("%s*%(оффлайн%)"), "")
                 name = name:match("^%s*(.-)%s*$") -- trim whitespace
                 
                 -- Extract points (e.g. "10 / 1143")
@@ -93,8 +93,8 @@ local function parseDialogText(text)
                 
                 if name and rank and points_day and points_total then
                     table.insert(members, {
-                        name = u8:decode(name), -- Convert CP1251 to UTF-8
-                        rank = u8:decode(rank:match("^%s*(.-)%s*$")), -- Convert CP1251 to UTF-8
+                        name = u8(name), -- Convert CP1251 to UTF-8
+                        rank = u8(rank:match("^%s*(.-)%s*$")), -- Convert CP1251 to UTF-8
                         points_day = tonumber(points_day),
                         points_total = tonumber(points_total)
                     })
@@ -121,16 +121,16 @@ local function saveAndSendScan(members)
         local url = config.server_url .. "/api/scan"
         local cmd = string.format('start /b curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer %s" -d @%s "%s"', config.secret_token, filepath, url)
         os.execute(cmd)
-        sampAddChatMessage(u8"[FamilyScreener] Данные очков успешно отправлены на сервер!", 0x2ECC71)
+        sampAddChatMessage(u8:decode("[FamilyScreener] Данные очков успешно отправлены на сервер!"), 0x2ECC71)
     else
-        sampAddChatMessage(u8"[FamilyScreener] Ошибка: не удалось сохранить файл сканирования.", 0xE74C3C)
+        sampAddChatMessage(u8:decode("[FamilyScreener] Ошибка: не удалось сохранить файл сканирования."), 0xE74C3C)
     end
 end
 
 local function sendGamePay(name, amount)
     local data = {
         sender_name = getMyName(),
-        player_name = u8:decode(name), -- Convert CP1251 to UTF-8
+        player_name = u8(name), -- Convert CP1251 to UTF-8
         amount = amount
     }
     
@@ -144,7 +144,7 @@ local function sendGamePay(name, amount)
         local url = config.server_url .. "/api/game-pay"
         local cmd = string.format('start /b curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer %s" -d @%s "%s"', config.secret_token, filepath, url)
         os.execute(cmd)
-        sampAddChatMessage(string.format(u8"[FamilyScreener] Выплата игроку %s на сумму %d$ отправлена на учет.", name, amount), 0xF1C40F)
+        sampAddChatMessage(string.format(u8:decode("[FamilyScreener] Выплата игроку %s на сумму %d$ отправлена на учет."), name, amount), 0xF1C40F)
     end
 end
 
@@ -173,11 +173,11 @@ end
 function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     if scanning then
         -- 1. Family Menu (Select "Участники семьи")
-        if title:find(u8"Управление семьей") then
+        if title:find(u8:decode("Управление семьей")) then
             local index = 0
             local found = false
             for line in text:gmatch("[^\r\n]+") do
-                if line:find(u8"Участники семьи") then
+                if line:find(u8:decode("Участники семьи")) then
                     found = true
                     break
                 end
@@ -188,20 +188,20 @@ function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
                 sampSendDialogResponse(dialogId, 1, index, "")
             else
                 scanning = false
-                sampAddChatMessage(u8"[FamilyScreener] Ошибка: Пункт 'Участники семьи' не найден.", 0xE74C3C)
+                sampAddChatMessage(u8:decode("[FamilyScreener] Ошибка: Пункт 'Участники семьи' не найден."), 0xE74C3C)
             end
             return false -- Hide dialog from player
         end
         
         -- 2. Members List Dialog (Scan points and close)
-        if title:find(u8"Список игроков в семье") then
+        if title:find(u8:decode("Список игроков в семье")) then
             local members = parseDialogText(text)
             if #members > 0 then
                 saveAndSendScan(members)
                 config.last_scan_date = os.date("%Y-%m-%d")
                 saveConfig()
             else
-                sampAddChatMessage(u8"[FamilyScreener] Ошибка: Не удалось распознать участников.", 0xE74C3C)
+                sampAddChatMessage(u8:decode("[FamilyScreener] Ошибка: Не удалось распознать участников."), 0xE74C3C)
             end
             
             -- Simulate clicking button2 ("Назад" / index 0)
@@ -222,7 +222,7 @@ function main()
         scanning = true
         scan_start_time = os.clock()
         sampSendChat("/family")
-        sampAddChatMessage(u8"[FamilyScreener] Запущен сбор очков семьи...", 0x3498DB)
+        sampAddChatMessage(u8:decode("[FamilyScreener] Запущен сбор очков семьи..."), 0x3498DB)
     end)
     
     -- Main background thread loop
@@ -232,7 +232,7 @@ function main()
         -- 1. Scan Timeout Check
         if scanning and (os.clock() - scan_start_time > 10) then
             scanning = false
-            sampAddChatMessage(u8"[FamilyScreener] Ошибка: Превышено время ожидания меню семьи.", 0xE74C3C)
+            sampAddChatMessage(u8:decode("[FamilyScreener] Ошибка: Превышено время ожидания меню семьи."), 0xE74C3C)
         end
         
         -- 2. Automatic Evening Scan Trigger (After 20:00)
@@ -244,7 +244,7 @@ function main()
                     scanning = true
                     scan_start_time = os.clock()
                     sampSendChat("/family")
-                    sampAddChatMessage(u8"[FamilyScreener] Запуск автоматического вечернего скрининга...", 0x3498DB)
+                    sampAddChatMessage(u8:decode("[FamilyScreener] Запуск автоматического вечернего скрининга..."), 0x3498DB)
                 end
             end
         end
