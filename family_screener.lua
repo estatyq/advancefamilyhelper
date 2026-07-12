@@ -86,15 +86,17 @@ local function parseDialogText(text)
                 
                 -- Clean nickname from online/offline tags (patterns converted from UTF-8 to CP1251)
                 local name = raw_name:gsub(u8:decode("%s*%(онлайн%)"), ""):gsub(u8:decode("%s*%(оффлайн%)"), "")
+                name = name:gsub("{%x%x%x%x%x%x}", "") -- Remove color tags
                 name = name:match("^%s*(.-)%s*$") -- trim whitespace
                 
                 -- Extract points (e.g. "10 / 1143")
                 local points_day, points_total = raw_points:match("(%d+)%s*/%s*(%d+)")
                 
                 if name and rank and points_day and points_total then
+                    local clean_rank = rank:gsub("{%x%x%x%x%x%x}", ""):match("^%s*(.-)%s*$")
                     table.insert(members, {
                         name = u8(name), -- Convert CP1251 to UTF-8
-                        rank = u8(rank:match("^%s*(.-)%s*$")), -- Convert CP1251 to UTF-8
+                        rank = u8(clean_rank), -- Convert CP1251 to UTF-8
                         points_day = tonumber(points_day),
                         points_total = tonumber(points_total)
                     })
